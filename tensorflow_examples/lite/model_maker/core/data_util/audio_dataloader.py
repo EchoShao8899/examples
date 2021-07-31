@@ -22,6 +22,7 @@ import random
 
 import pandas as pd
 import tensorflow as tf
+import tensorflow as tfio
 from tensorflow_examples.lite.model_maker.core.api.api_util import mm_export
 from tensorflow_examples.lite.model_maker.core.data_util import dataloader
 from tensorflow_examples.lite.model_maker.core.task.model_spec import audio_spec
@@ -303,9 +304,13 @@ class DataLoader(dataloader.ClassificationDataLoader):
 
     @tf.function
     def _load_wav(filepath, label):
-      file_contents = tf.io.read_file(filepath)
+      file_contents = tfio.audio.AudioIOTensor(filepath, dtype=tf.int16)
+      # dtype: int32
+      sample_rate = file_contents.rate
+      # shape: (audio_samples, 1), dtype: int16
+      wav = wav.to_tensor()
       # shape: (audio_samples, 1), dtype: float32
-      wav, sample_rate = tf.audio.decode_wav(file_contents, desired_channels=1)
+      wav = tf.cast(wav, tf.float32) / (1<<15)
       # shape: (audio_samples,)
       wav = tf.squeeze(wav, axis=-1)
       return wav, sample_rate, label
